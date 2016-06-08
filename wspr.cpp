@@ -235,7 +235,7 @@ void deallocMemPool()
 	{
 	    unmapmem(mbox.virt_addr, mbox.pool_size*4096);
 	    mem_unlock(mbox.handle, mbox.mem_ref);
-	    mem_free(mbox.handle, mbox.mem_ref);	
+	    mem_free(mbox.handle, mbox.mem_ref);
 	}
 }
 
@@ -687,6 +687,7 @@ void wait_every(int minute)
     usleep(1000);
   }
   usleep(1000000); // wait another second
+  printf(".");
 }
 
 void print_usage() {
@@ -1084,7 +1085,7 @@ int main(const int argc, char * const argv[]) {
   int mem_fd;
   char *gpio_mem, *gpio_map;
   volatile unsigned *gpio = NULL;
-  
+
   setup_io(mem_fd,gpio_mem,gpio_map,gpio);
   setup_gpios(gpio);
   allof7e = (unsigned *)mmap(
@@ -1118,7 +1119,7 @@ int main(const int argc, char * const argv[]) {
     cout << "Press CTRL-C to exit!" << endl;
 
     txon();
-    int bufPtr=0; 
+    int bufPtr=0;
     vector <double> dma_table_freq;
     // Set to non-zero value to ensure setupDMATab is called at least once.
     double ppm_prev=123456;
@@ -1196,12 +1197,15 @@ int main(const int argc, char * const argv[]) {
         wait_every((wspr15) ? 15 : 2);
       }
 
+      printf("  Updating crystal calibration information... ");
       // Update crystal calibration information
       if (self_cal) {
         update_ppm(ppm);
       }
+      printf("done\n");
 
       // Create the DMA table for this center frequency
+      printf("  Creating the DMA table for this center frequency...");
       vector <double> dma_table_freq;
       double center_freq_actual;
       if (center_freq_desired) {
@@ -1209,6 +1213,7 @@ int main(const int argc, char * const argv[]) {
       } else {
         center_freq_actual=center_freq_desired;
       }
+      printf("done\n");
 
       // Send the message!
       //cout << "TX started!" << endl;
@@ -1225,6 +1230,7 @@ int main(const int argc, char * const argv[]) {
         int bufPtr=0;
         txon();
         for (int i = 0; i < 162; i++) {
+          printf("new symbol...");
           gettimeofday(&sym_start,NULL);
           timeval_subtract(&diff, &sym_start, &tvBegin);
           double elapsed=diff.tv_sec+diff.tv_usec/1e6;
@@ -1235,12 +1241,16 @@ int main(const int argc, char * const argv[]) {
           double this_sym=sched_end-elapsed;
           this_sym=(this_sym<.2)?.2:this_sym;
           this_sym=(this_sym>2*wspr_symtime)?2*wspr_symtime:this_sym;
+          printf("txSym...");
           txSym(symbols[i], center_freq_actual, tone_spacing, sched_end-elapsed, dma_table_freq, F_PWM_CLK_INIT, instrs, constPage, bufPtr);
+          printf("done\n");
         }
         n_tx++;
 
         // Turn transmitter off
+        printf("txoff...");
         txoff();
+        printf("done\n");
 
         gettimeofday(&tvEnd, NULL);
         cout << "  TX ended at:   ";
@@ -1267,4 +1277,3 @@ int main(const int argc, char * const argv[]) {
 
   return 0;
 }
-
