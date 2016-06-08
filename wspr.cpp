@@ -678,16 +678,18 @@ n2>>10, n2>>2, (n2&0x03)<<6, 0, 0, 0, 0};
 // Wait for the system clock's minute to reach one second past 'minute'
 void wait_every(int minute)
 {
+    static int testcntr = 0;
   time_t t;
   struct tm* ptm;
   for(;;){
     time(&t);
     ptm = gmtime(&t);
     if((ptm->tm_min % minute) == 0 && ptm->tm_sec == 0) break;
-    usleep(1000);
+    int tosleep = ((ptm->tm_min%minute)==(minute-1)&&ptm->tm_sec>57) ? 1000 : 100000;
+    usleep(tosleep);
+    if(testcntr++%10 == 0) printf((tosleep>1000)?".":":");
   }
   usleep(1000000); // wait another second
-  printf(".");
 }
 
 void print_usage() {
